@@ -1,4 +1,4 @@
-const CACHE_NAME = 'taskling-v1'
+const CACHE_NAME = 'taskling-v2'
 const STATIC_ASSETS = ['/', '/tasks', '/chat', '/character', '/battle', '/inventory', '/calendar']
 
 self.addEventListener('install', (event) => {
