@@ -287,13 +287,19 @@ export default function InventoryPage() {
                 >
                   キャンセル
                 </button>
-                <motion.button
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => handleUse(selectedItem.id)}
-                  className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-500 text-white font-bold text-sm shadow-lg shadow-purple-900/30"
-                >
-                  {selectedItem.isEquippable ? '🎽 装備する' : '✨ 使う'}
-                </motion.button>
+                {selectedItem.category === 'material' ? (
+                  <div className="flex-1 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-gray-500 font-medium text-sm text-center flex items-center justify-center">
+                    🔒 進化時のみ使用可
+                  </div>
+                ) : (
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    onClick={() => handleUse(selectedItem.id)}
+                    className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-500 text-white font-bold text-sm shadow-lg shadow-purple-900/30"
+                  >
+                    {selectedItem.isEquippable ? '🎽 装備する' : '✨ 使う'}
+                  </motion.button>
+                )}
               </div>
             </motion.div>
           </motion.div>

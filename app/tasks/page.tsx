@@ -26,6 +26,13 @@ export default function TasksPage() {
   const [newTitle, setNewTitle] = useState('')
   const [newCategory, setNewCategory] = useState<TaskCategory>('work')
   const [newDeadline, setNewDeadline] = useState('')
+  const [newIsMultiStep, setNewIsMultiStep] = useState(false)
+
+  const quickDate = (days: number) => {
+    const d = new Date()
+    d.setDate(d.getDate() + days)
+    return d.toISOString().slice(0, 10)
+  }
 
   const filteredTasks = tasks
     .filter((t) => {
@@ -55,10 +62,11 @@ export default function TasksPage() {
 
   const handleAdd = () => {
     if (!newTitle.trim()) return
-    addTask(newTitle.trim(), newCategory, newDeadline || undefined)
+    addTask(newTitle.trim(), newCategory, newDeadline || undefined, newIsMultiStep || undefined)
     setNewTitle('')
     setNewDeadline('')
     setNewCategory('work')
+    setNewIsMultiStep(false)
     setShowAdd(false)
   }
 
@@ -183,6 +191,19 @@ export default function TasksPage() {
 
                 <div>
                   <p className="text-xs text-gray-500 mb-2 font-medium">締切（任意）</p>
+                  <div className="flex gap-1.5 mb-2">
+                    {[{ label: '今日', days: 0 }, { label: '明日', days: 1 }, { label: '来週', days: 7 }].map(({ label, days }) => (
+                      <button
+                        key={label}
+                        onClick={() => setNewDeadline(quickDate(days))}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                          newDeadline === quickDate(days) ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                   <div className="flex gap-2">
                     <input
                       type="date"
@@ -199,7 +220,19 @@ export default function TasksPage() {
                       </button>
                     )}
                   </div>
-                  <p className="text-xs text-gray-600 mt-1">入力しなくてもOK</p>
+                </div>
+
+                <div className="flex items-center justify-between py-1">
+                  <div>
+                    <p className="text-sm text-white font-medium">5段階進捗</p>
+                    <p className="text-xs text-gray-500 mt-0.5">ONにすると細かく進捗を記録できる</p>
+                  </div>
+                  <button
+                    onClick={() => setNewIsMultiStep(!newIsMultiStep)}
+                    className={`relative w-11 h-6 rounded-full transition-all duration-200 ${newIsMultiStep ? 'bg-purple-600' : 'bg-gray-700'}`}
+                  >
+                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${newIsMultiStep ? 'left-5' : 'left-0.5'}`} />
+                  </button>
                 </div>
               </div>
 

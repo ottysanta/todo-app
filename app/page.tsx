@@ -14,6 +14,7 @@ import XPBar from '@/components/XPBar'
 import { playSound } from '@/lib/sound'
 import DailyMissions from '@/components/DailyMissions'
 import EvolutionModal from '@/components/EvolutionModal'
+import StageEvolutionModal from '@/components/StageEvolutionModal'
 
 export default function HomePage() {
   const router = useRouter()
@@ -89,6 +90,7 @@ export default function HomePage() {
     <div className="px-4 py-6 space-y-5">
       <LevelUpModal show={showLevelUp} level={levelUpData?.level ?? 1} onClose={dismissLevelUp} />
       <EvolutionModal />
+      <StageEvolutionModal />
 
       {/* ヘッダー */}
       <div className="flex justify-between items-center">

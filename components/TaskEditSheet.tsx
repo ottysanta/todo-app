@@ -118,6 +118,36 @@ export default function TaskEditSheet({ task, onClose, onSave, onDelete }: Props
             {/* 締切 */}
             <div>
               <p className="text-xs text-gray-500 mb-1.5">締切（任意）</p>
+              <div className="flex gap-1.5 mb-2">
+                {[
+                  { label: '今日', days: 0 },
+                  { label: '明日', days: 1 },
+                  { label: '来週', days: 7 },
+                ].map(({ label, days }) => {
+                  const d = new Date()
+                  d.setDate(d.getDate() + days)
+                  const val = d.toISOString().slice(0, 10)
+                  return (
+                    <button
+                      key={label}
+                      onClick={() => setDeadline(val)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                        deadline === val ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+                {deadline && (
+                  <button
+                    onClick={() => setDeadline('')}
+                    className="px-3 py-1.5 rounded-xl text-xs text-gray-500 bg-white/5"
+                  >
+                    クリア
+                  </button>
+                )}
+              </div>
               <input
                 type="date"
                 value={deadline}

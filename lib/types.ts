@@ -51,6 +51,7 @@ export interface Task {
   category: TaskCategory
   createdAt: string
   completedAt?: string
+  isMultiStep?: boolean
 }
 
 export interface DailyMission {

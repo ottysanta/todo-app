@@ -19,9 +19,13 @@ interface Props {
 export default function TaskCard({ task, onStatusChange, onEdit }: Props) {
   const [showReward, setShowReward] = useState(false)
 
+  // isMultiStep is explicitly false → single-step mode
+  // undefined or true → legacy multi-step mode
+  const isSingleStep = task.isMultiStep === false
+
   const handleProgress = () => {
     if (task.status >= 5) return
-    const next = (task.status + 1) as TaskStatus
+    const next = isSingleStep ? 5 : ((task.status + 1) as TaskStatus)
     if (next === 5) {
       setShowReward(true)
       setTimeout(() => setShowReward(false), 1800)
@@ -83,26 +87,34 @@ export default function TaskCard({ task, onStatusChange, onEdit }: Props) {
           )}
 
           {/* 進捗バー */}
-          <div className="mt-2.5">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-xs text-gray-500">{getProgressLabel(task.status)}</span>
-              <span className="text-xs text-gray-600">{task.status}/5</span>
+          {isSingleStep ? (
+            <div className="mt-2">
+              <span className={`text-xs ${isComplete ? 'text-green-400' : 'text-gray-500'}`}>
+                {isComplete ? '完了 ✓' : '未完了'}
+              </span>
             </div>
-            <div className="h-2 bg-gray-700/60 rounded-full overflow-hidden">
-              <motion.div
-                className={`h-full rounded-full ${getProgressColor(task.status)}`}
-                animate={{ width: getProgressWidth(task.status) }}
-                transition={{ duration: 0.4, ease: 'easeOut' }}
-              />
+          ) : (
+            <div className="mt-2.5">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs text-gray-500">{getProgressLabel(task.status)}</span>
+                <span className="text-xs text-gray-600">{task.status}/5</span>
+              </div>
+              <div className="h-2 bg-gray-700/60 rounded-full overflow-hidden">
+                <motion.div
+                  className={`h-full rounded-full ${getProgressColor(task.status)}`}
+                  animate={{ width: getProgressWidth(task.status) }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* 右側ボタン群 */}
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           {!isComplete ? (
             <div className="flex items-center gap-1">
-              {task.status > 0 && (
+              {!isSingleStep && task.status > 0 && (
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={handleRegress}
@@ -117,7 +129,7 @@ export default function TaskCard({ task, onStatusChange, onEdit }: Props) {
                 onClick={handleProgress}
                 className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors"
               >
-                進める
+                {isSingleStep ? '完了する' : '進める'}
               </motion.button>
             </div>
           ) : (

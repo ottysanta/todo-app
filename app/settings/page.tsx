@@ -5,12 +5,27 @@ import { useGameStore } from '@/lib/store'
 import Link from 'next/link'
 
 export default function SettingsPage() {
-  const { userName, character, changeUserName, changeCharacterName, soundEnabled, toggleSound, resetGame } = useGameStore()
+  const {
+    userName, character, changeUserName, changeCharacterName,
+    soundEnabled, toggleSound, resetGame,
+    isAdminMode, unlockAdmin,
+    adminSetLevel, adminSetStats, adminGiveAllItems, adminResetEvolution,
+  } = useGameStore()
+
   const [editingUser, setEditingUser] = useState(false)
   const [editingChar, setEditingChar] = useState(false)
   const [userNameInput, setUserNameInput] = useState(userName)
   const [charNameInput, setCharNameInput] = useState(character.name)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+
+  // Admin
+  const [adminCode, setAdminCode] = useState('')
+  const [adminCodeError, setAdminCodeError] = useState(false)
+  const [adminLevel, setAdminLevel] = useState(character.level)
+  const [adminHp, setAdminHp] = useState(character.hp)
+  const [adminCoins, setAdminCoins] = useState(character.coins ?? 0)
+  const [adminFood, setAdminFood] = useState(character.food)
+  const [adminBond, setAdminBond] = useState(Math.round(character.bondLevel))
 
   const saveUserName = () => {
     const v = userNameInput.trim()
@@ -22,6 +37,15 @@ export default function SettingsPage() {
     const v = charNameInput.trim()
     if (v) changeCharacterName(v)
     setEditingChar(false)
+  }
+
+  const handleUnlockAdmin = () => {
+    const ok = unlockAdmin(adminCode.trim())
+    if (!ok) {
+      setAdminCodeError(true)
+      setTimeout(() => setAdminCodeError(false), 1500)
+    }
+    setAdminCode('')
   }
 
   return (
@@ -134,6 +158,117 @@ export default function SettingsPage() {
           ))}
         </div>
       </div>
+
+      {/* Admin unlock */}
+      {!isAdminMode && (
+        <div className="bg-[#1a1a2e] rounded-2xl border border-white/5 overflow-hidden">
+          <div className="px-4 py-3 border-b border-white/5">
+            <p className="text-sm font-semibold text-white">Codeを入力</p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-gray-500 text-xs mb-3">特別コードを入力すると開発者モードが解放されます</p>
+            <div className="flex gap-2">
+              <input
+                value={adminCode}
+                onChange={e => setAdminCode(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleUnlockAdmin()}
+                placeholder="コードを入力..."
+                className={`flex-1 bg-white/5 border rounded-xl px-3 py-2.5 text-white text-sm outline-none transition-colors ${
+                  adminCodeError ? 'border-red-500/60' : 'border-white/10 focus:border-purple-500'
+                }`}
+              />
+              <button
+                onClick={handleUnlockAdmin}
+                className="px-4 py-2.5 bg-white/10 text-gray-300 rounded-xl text-sm font-medium active:bg-white/20 transition-colors"
+              >
+                解放
+              </button>
+            </div>
+            {adminCodeError && (
+              <p className="text-red-400 text-xs mt-1.5">コードが正しくありません</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Admin panel */}
+      {isAdminMode && (
+        <div className="bg-[#1a1a2e] rounded-2xl border border-green-500/30 overflow-hidden">
+          <div className="px-4 py-3 border-b border-green-500/20">
+            <p className="text-sm font-semibold text-green-400">🛠 開発者モード</p>
+          </div>
+          <div className="px-4 py-4 space-y-4">
+
+            {/* Level */}
+            <div>
+              <p className="text-xs text-gray-500 mb-2">レベル設定</p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={adminLevel}
+                  onChange={e => setAdminLevel(Number(e.target.value))}
+                  className="w-20 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-green-500"
+                />
+                <button
+                  onClick={() => adminSetLevel(adminLevel)}
+                  className="flex-1 py-2 bg-green-600/20 text-green-400 border border-green-500/30 rounded-xl text-sm font-medium"
+                >
+                  Lvを設定
+                </button>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div>
+              <p className="text-xs text-gray-500 mb-2">ステータス設定</p>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { key: 'hp',        label: 'HP',       value: adminHp,    set: setAdminHp,    max: 100 },
+                  { key: 'coins',     label: 'コイン',    value: adminCoins, set: setAdminCoins, max: 99999 },
+                  { key: 'food',      label: '食料',      value: adminFood,  set: setAdminFood,  max: 999 },
+                  { key: 'bondLevel', label: '絆レベル',  value: adminBond,  set: setAdminBond,  max: 100 },
+                ] as const).map(({ key, label, value, set, max }) => (
+                  <div key={key}>
+                    <p className="text-xs text-gray-600 mb-1">{label}</p>
+                    <input
+                      type="number"
+                      min={0}
+                      max={max}
+                      value={value}
+                      onChange={e => (set as (v: number) => void)(Number(e.target.value))}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-green-500"
+                    />
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => adminSetStats({ hp: adminHp, coins: adminCoins, food: adminFood, bondLevel: adminBond })}
+                className="w-full mt-2 py-2 bg-green-600/20 text-green-400 border border-green-500/30 rounded-xl text-sm font-medium"
+              >
+                ステータスを適用
+              </button>
+            </div>
+
+            {/* All items */}
+            <button
+              onClick={adminGiveAllItems}
+              className="w-full py-3 bg-yellow-600/20 text-yellow-400 border border-yellow-500/30 rounded-xl text-sm font-medium"
+            >
+              🎒 全アイテム×99追加
+            </button>
+
+            {/* Reset evolution */}
+            <button
+              onClick={adminResetEvolution}
+              className="w-full py-3 bg-red-600/20 text-red-400 border border-red-500/30 rounded-xl text-sm font-medium"
+            >
+              🔄 進化をリセット
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* About */}
       <div className="bg-[#1a1a2e] rounded-2xl border border-white/5 overflow-hidden">

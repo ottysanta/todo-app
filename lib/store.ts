@@ -91,7 +91,7 @@ interface GameStore {
   completeOnboarding: (userName: string, charName: string, species: CharacterSpecies) => void
   setHasHydrated: (v: boolean) => void
   toggleSound: () => void
-  addTask: (title: string, category: TaskCategory, deadline?: string) => void
+  addTask: (title: string, category: TaskCategory, deadline?: string, isMultiStep?: boolean) => void
   updateTaskStatus: (id: string, status: TaskStatus) => void
   editTask: (id: string, updates: Partial<Pick<Task, 'title' | 'category' | 'deadline' | 'status'>>) => void
   deleteTask: (id: string) => void
@@ -127,6 +127,18 @@ interface GameStore {
   confirmEvolution: (type: EvolutionType) => void
   dismissEvolution: () => void
 
+  // ステージ進化イベント
+  pendingStageEvolution: { level: number; stageName: string } | null
+  dismissStageEvolution: () => void
+
+  // 管理者
+  isAdminMode: boolean
+  unlockAdmin: (code: string) => boolean
+  adminSetLevel: (level: number) => void
+  adminSetStats: (stats: { hp?: number; coins?: number; food?: number; bondLevel?: number }) => void
+  adminGiveAllItems: () => void
+  adminResetEvolution: () => void
+
   // 通知
   lastItemDrop: { itemId: string; quantity: number } | null
   clearItemDrop: () => void
@@ -138,6 +150,12 @@ interface GameStore {
   changeUserName: (name: string) => void
   changeCharacterName: (name: string) => void
   resetGame: () => void
+}
+
+const STAGE_EVOLUTION_LEVELS: Record<number, string> = {
+  3: '子供期',
+  5: '成長期',
+  15: '伝説',
 }
 
 const EVOLUTION_SPECIES: Record<string, string> = {
@@ -224,6 +242,8 @@ export const useGameStore = create<GameStore>()(
       inventory: [],
       equippedItems: {},
       pendingEvolution: false,
+      pendingStageEvolution: null,
+      isAdminMode: false,
       lastItemDrop: null,
 
       setHasHydrated: (v) => set({ _hasHydrated: v }),
@@ -241,7 +261,7 @@ export const useGameStore = create<GameStore>()(
         })
       },
 
-      addTask: (title, category, deadline) => {
+      addTask: (title, category, deadline, isMultiStep) => {
         const task: Task = {
           id: Date.now().toString(),
           title,
@@ -249,6 +269,7 @@ export const useGameStore = create<GameStore>()(
           deadline,
           category,
           createdAt: new Date().toISOString(),
+          isMultiStep,
         }
         set((s) => ({ tasks: [task, ...s.tasks] }))
       },
@@ -339,6 +360,11 @@ export const useGameStore = create<GameStore>()(
         const evos = getAvailableEvolutions(newCharacter)
         const pendingEvolution = evos.length > 0 && !newCharacter.evolutionType
 
+        // Stage evolution
+        const stageEvolution = leveledUp && STAGE_EVOLUTION_LEVELS[newLevel]
+          ? { level: newLevel, stageName: STAGE_EVOLUTION_LEVELS[newLevel] }
+          : null
+
         set({
           tasks: tasks.map((t) =>
             t.id === id
@@ -353,6 +379,7 @@ export const useGameStore = create<GameStore>()(
           totalProgressSteps: newProgressSteps,
           inventory: newInventory,
           pendingEvolution: pendingEvolution || get().pendingEvolution,
+          pendingStageEvolution: stageEvolution ?? get().pendingStageEvolution,
           lastItemDrop: taskDropped ? { itemId: taskDropped, quantity: 1 } : get().lastItemDrop,
         })
       },
@@ -612,6 +639,10 @@ export const useGameStore = create<GameStore>()(
         const evos = getAvailableEvolutions(newChar)
         const pendingEvolution = evos.length > 0 && !newChar.evolutionType
 
+        const stageEvolution = leveledUp && STAGE_EVOLUTION_LEVELS[newLevel]
+          ? { level: newLevel, stageName: STAGE_EVOLUTION_LEVELS[newLevel] }
+          : null
+
         set({
           lastBattleResult: { ...result, itemDropped: dropped ?? undefined },
           lastBattleDate: new Date().toDateString(),
@@ -621,6 +652,7 @@ export const useGameStore = create<GameStore>()(
           levelUpData: leveledUp ? { level: newLevel } : null,
           inventory: newInventory,
           pendingEvolution: pendingEvolution || get().pendingEvolution,
+          pendingStageEvolution: stageEvolution ?? get().pendingStageEvolution,
           lastItemDrop: dropped ? { itemId: dropped, quantity: 1 } : get().lastItemDrop,
         })
       },
@@ -670,6 +702,7 @@ export const useGameStore = create<GameStore>()(
         if (!slot || slot.quantity <= 0) return false
         const item = ITEMS[itemId]
         if (!item || item.isEquippable) return false
+        if (item.category === 'material') return false
 
         const eff = item.effect
         const newChar: Character = {
@@ -752,6 +785,7 @@ export const useGameStore = create<GameStore>()(
       },
 
       dismissEvolution: () => set({ pendingEvolution: false }),
+      dismissStageEvolution: () => set({ pendingStageEvolution: null }),
 
       clearItemDrop: () => set({ lastItemDrop: null }),
 
@@ -767,6 +801,53 @@ export const useGameStore = create<GameStore>()(
           inventory: newInventory,
         })
         return true
+      },
+
+      unlockAdmin: (code) => {
+        if (code === '雄亮') {
+          set({ isAdminMode: true })
+          return true
+        }
+        return false
+      },
+
+      adminSetLevel: (level) => {
+        const { character } = get()
+        set({
+          character: {
+            ...character,
+            level,
+            xp: 0,
+            xpToNext: getXpToNext(level),
+          },
+        })
+      },
+
+      adminSetStats: (stats) => {
+        const { character } = get()
+        set({
+          character: {
+            ...character,
+            hp: stats.hp ?? character.hp,
+            coins: stats.coins ?? character.coins,
+            food: stats.food ?? character.food,
+            bondLevel: stats.bondLevel ?? character.bondLevel,
+          },
+        })
+      },
+
+      adminGiveAllItems: () => {
+        const allItems = Object.keys(ITEMS).map((itemId) => ({ itemId, quantity: 99 }))
+        set({ inventory: allItems })
+      },
+
+      adminResetEvolution: () => {
+        const { character } = get()
+        set({
+          character: { ...character, evolutionType: undefined, characterSpecies: 'lumie' },
+          pendingEvolution: false,
+          pendingStageEvolution: null,
+        })
       },
 
       changeUserName: (name) => set({ userName: name }),
@@ -806,6 +887,8 @@ export const useGameStore = create<GameStore>()(
           inventory: p.inventory ?? [],
           equippedItems: p.equippedItems ?? {},
           pendingEvolution: p.pendingEvolution ?? false,
+          pendingStageEvolution: p.pendingStageEvolution ?? null,
+          isAdminMode: p.isAdminMode ?? false,
           lastItemDrop: null,
           character: {
             ...current.character,
