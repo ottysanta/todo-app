@@ -83,6 +83,7 @@ export interface Character {
   hunger: number
   mood: number
   food: number
+  coins: number
   evolutionType?: EvolutionType
   totalTasksCompleted: number
   taskCategoryCounts: Record<string, number>
@@ -96,6 +97,8 @@ export interface Character {
   characterSpecies?: CharacterSpecies
   /** 連続ログイン日数 */
   streak: number
+  /** 倒した敵の記録 */
+  defeatedEnemies?: Record<string, number>
 }
 
 export interface TeamMember {
@@ -112,6 +115,7 @@ export interface TeamMember {
 // ===== Battle types =====
 
 export type EnemyType = 'slime' | 'goblin' | 'zombie' | 'golem' | 'witch' | 'knight' | 'dragon' | 'boss'
+  | 'wolf' | 'orc' | 'vampire' | 'mummy' | 'skeleton' | 'imp' | 'troll' | 'phoenix' | 'hydra' | 'demon_king'
 
 export interface BattleEnemy {
   id: string
@@ -123,8 +127,11 @@ export interface BattleEnemy {
   defense: number
   xpReward: number
   foodReward: number
+  coinReward: number
   type: EnemyType
   description: string
+  isRare?: boolean
+  isBoss?: boolean
 }
 
 export interface BattleStats {
@@ -155,6 +162,7 @@ export interface BattleResult {
   rounds: BattleRound[]
   xpGained: number
   foodGained: number
+  coinsGained: number
   itemDropped?: string
   playerStats: BattleStats
   totalRounds: number

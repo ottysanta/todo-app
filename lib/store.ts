@@ -131,10 +131,21 @@ interface GameStore {
   lastItemDrop: { itemId: string; quantity: number } | null
   clearItemDrop: () => void
 
+  // ショップ
+  buyItem: (itemId: string, price: number) => boolean
+
   // 設定
   changeUserName: (name: string) => void
   changeCharacterName: (name: string) => void
   resetGame: () => void
+}
+
+const EVOLUTION_SPECIES: Record<string, string> = {
+  scholar: 'alien',
+  warrior: 'dragon',
+  steady: 'bear',
+  leader: 'penguin',
+  harmony: 'lumie',
 }
 
 const initialCharacter: Character = {
@@ -146,11 +157,13 @@ const initialCharacter: Character = {
   hunger: 20,
   mood: 70,
   food: 0,
+  coins: 0,
   totalTasksCompleted: 0,
   taskCategoryCounts: { work: 0, study: 0, exercise: 0, personal: 0, team: 0 },
   bondLevel: 5,
   tapCountToday: 0,
   streak: 0,
+  defeatedEnemies: {},
 }
 
 function checkAndUnlockAchievements(
@@ -581,12 +594,20 @@ export const useGameStore = create<GameStore>()(
           }
         }
 
+        // Update defeated enemies record
+        const defeatedEnemies = { ...(character.defeatedEnemies ?? {}) }
+        if (result.won) {
+          defeatedEnemies[result.enemy.id] = (defeatedEnemies[result.enemy.id] ?? 0) + 1
+        }
+
         const newChar: Character = {
           ...character,
           xp: levelXp,
           level: newLevel,
           xpToNext: newXpToNext,
           food: character.food + result.foodGained,
+          coins: (character.coins ?? 0) + (result.won ? result.coinsGained : 0),
+          defeatedEnemies,
         }
         const evos = getAvailableEvolutions(newChar)
         const pendingEvolution = evos.length > 0 && !newChar.evolutionType
@@ -723,8 +744,9 @@ export const useGameStore = create<GameStore>()(
 
       confirmEvolution: (type) => {
         const { character } = get()
+        const newSpecies = EVOLUTION_SPECIES[type] ?? character.characterSpecies
         set({
-          character: { ...character, evolutionType: type },
+          character: { ...character, evolutionType: type, characterSpecies: newSpecies as typeof character.characterSpecies },
           pendingEvolution: false,
         })
       },
@@ -732,6 +754,20 @@ export const useGameStore = create<GameStore>()(
       dismissEvolution: () => set({ pendingEvolution: false }),
 
       clearItemDrop: () => set({ lastItemDrop: null }),
+
+      buyItem: (itemId, price) => {
+        const { character, inventory } = get()
+        if ((character.coins ?? 0) < price) return false
+        const existing = inventory.find(i => i.itemId === itemId)
+        const newInventory = existing
+          ? inventory.map(i => i.itemId === itemId ? { ...i, quantity: i.quantity + 1 } : i)
+          : [...inventory, { itemId, quantity: 1 }]
+        set({
+          character: { ...character, coins: (character.coins ?? 0) - price },
+          inventory: newInventory,
+        })
+        return true
+      },
 
       changeUserName: (name) => set({ userName: name }),
       changeCharacterName: (name) => {
@@ -778,6 +814,8 @@ export const useGameStore = create<GameStore>()(
             tapCountToday: pc?.tapCountToday ?? 0,
             characterSpecies: pc?.characterSpecies ?? 'lumie',
             streak: pc?.streak ?? 0,
+            coins: pc?.coins ?? 0,
+            defeatedEnemies: pc?.defeatedEnemies ?? {},
             // Recalculate from level to fix old saves and formula changes
             xpToNext: getXpToNext(pc?.level ?? 1),
             xp: Math.min(pc?.xp ?? 0, Math.max(0, getXpToNext(pc?.level ?? 1) - 1)),

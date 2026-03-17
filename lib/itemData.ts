@@ -179,6 +179,70 @@ export const ITEMS: Record<string, GameItem> = {
     effect: { attackBonus: 20, defenseBonus: 15, critBonus: 0.10, bondBonus: 3 }, isEquippable: true,
   },
 
+  // ===== 追加装備 =====
+  iron_sword: {
+    id: 'iron_sword', name: '鉄の剣', emoji: '🗡️', rarity: 'uncommon', category: 'equipment',
+    description: '攻撃+12。シンプルな剣。',
+    flavorText: '鍛冶師が丁寧に打ち上げた一本。',
+    effect: { attackBonus: 12 }, isEquippable: true,
+  },
+  flame_sword: {
+    id: 'flame_sword', name: '炎の剣', emoji: '🔥', rarity: 'rare', category: 'equipment',
+    description: '攻撃+20、クリット+8%。',
+    flavorText: '炎を宿した剣。敵を焼き払う。',
+    effect: { attackBonus: 20, critBonus: 0.08 }, isEquippable: true,
+  },
+  dragon_armor: {
+    id: 'dragon_armor', name: 'ドラゴンアーマー', emoji: '🛡️', rarity: 'epic', category: 'equipment',
+    description: '防御+25、HP+20%。',
+    flavorText: 'ドラゴンの鱗で作られた鎧。',
+    effect: { defenseBonus: 25, hp: 20 }, isEquippable: true,
+  },
+  void_ring: {
+    id: 'void_ring', name: '虚空の指輪', emoji: '💍', rarity: 'rare', category: 'equipment',
+    description: '攻撃+10、防御+10、XP×1.2倍。',
+    flavorText: '虚空から生まれた神秘の指輪。',
+    effect: { attackBonus: 10, defenseBonus: 10, xpMultiplier: 1.2 }, isEquippable: true,
+  },
+  hero_cape: {
+    id: 'hero_cape', name: '英雄のマント', emoji: '🦸', rarity: 'epic', category: 'equipment',
+    description: '防御+18、クリット+10%、絆+3。',
+    flavorText: '伝説の英雄が身に着けたマント。',
+    effect: { defenseBonus: 18, critBonus: 0.10, bondBonus: 3 }, isEquippable: true,
+  },
+  wisdom_crown: {
+    id: 'wisdom_crown', name: '知恵の王冠', emoji: '🌟', rarity: 'epic', category: 'equipment',
+    description: 'XP×1.5倍、攻撃+8。',
+    flavorText: '知恵を司る王冠。学びの力が増す。',
+    effect: { xpMultiplier: 1.5, attackBonus: 8 }, isEquippable: true,
+  },
+
+  // ===== 追加バトル補助 =====
+  berserker_potion: {
+    id: 'berserker_potion', name: 'バーサーカーポーション', emoji: '🧪', rarity: 'rare', category: 'battle',
+    description: '攻撃+30だが防御-10。',
+    flavorText: '飲んだ者は無敵の力を得るが、理性を失う。',
+    effect: { attackBonus: 30, defenseBonus: -10 },
+  },
+  shield_potion: {
+    id: 'shield_potion', name: 'シールドポーション', emoji: '🛡️', rarity: 'rare', category: 'battle',
+    description: '防御+25、HP+20。',
+    flavorText: '飲むと体の周りに光のバリアが現れる。',
+    effect: { defenseBonus: 25, hp: 20 },
+  },
+  lucky_charm: {
+    id: 'lucky_charm', name: 'ラッキーチャーム', emoji: '🍀', rarity: 'uncommon', category: 'battle',
+    description: 'クリット率+20%。運命が微笑む。',
+    flavorText: '四葉のクローバーから生まれた幸運のお守り。',
+    effect: { critBonus: 0.20 },
+  },
+  dragon_breath: {
+    id: 'dragon_breath', name: 'ドラゴンの息吹', emoji: '🔮', rarity: 'epic', category: 'battle',
+    description: '攻撃+40、クリット+15%。',
+    flavorText: 'ドラゴンの息吹を瓶に閉じ込めた最強の秘薬。',
+    effect: { attackBonus: 40, critBonus: 0.15 },
+  },
+
   // ===== 記念/限定 =====
   first_evolution: {
     id: 'first_evolution', name: '初進化の証', emoji: '🌟', rarity: 'epic', category: 'special',
@@ -220,13 +284,33 @@ export const RARITY_LABELS: Record<string, string> = {
   common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legendary: 'Legendary',
 }
 
+// Shop items purchasable with coins
+export const SHOP_ITEMS: Array<{ itemId: string; price: number; unlockLevel: number }> = [
+  { itemId: 'small_cape',        price: 30,  unlockLevel: 1 },
+  { itemId: 'study_glasses',     price: 40,  unlockLevel: 2 },
+  { itemId: 'iron_sword',        price: 50,  unlockLevel: 3 },
+  { itemId: 'lucky_charm',       price: 45,  unlockLevel: 3 },
+  { itemId: 'battle_hachimaki',  price: 70,  unlockLevel: 5 },
+  { itemId: 'star_necklace',     price: 80,  unlockLevel: 5 },
+  { itemId: 'shield_potion',     price: 60,  unlockLevel: 5 },
+  { itemId: 'void_ring',         price: 120, unlockLevel: 7 },
+  { itemId: 'flame_sword',       price: 130, unlockLevel: 8 },
+  { itemId: 'berserker_potion',  price: 90,  unlockLevel: 8 },
+  { itemId: 'rainbow_ribbon',    price: 160, unlockLevel: 10 },
+  { itemId: 'hero_cape',         price: 180, unlockLevel: 10 },
+  { itemId: 'dragon_breath',     price: 200, unlockLevel: 12 },
+  { itemId: 'dragon_armor',      price: 220, unlockLevel: 12 },
+  { itemId: 'wisdom_crown',      price: 250, unlockLevel: 15 },
+  { itemId: 'legendary_crown',   price: 400, unlockLevel: 20 },
+]
+
 // Which items can drop from various sources
 export const DROP_TABLES = {
-  taskComplete: ['normal_food', 'heal_leaf', 'hot_milk', 'energy_fruit', 'courage_badge'],
-  missionClaim: ['energy_fruit', 'idea_candy', 'heal_leaf', 'focus_soup', 'speed_oil'],
+  taskComplete: ['normal_food', 'heal_leaf', 'hot_milk', 'energy_fruit', 'courage_badge', 'lucky_charm'],
+  missionClaim: ['energy_fruit', 'idea_candy', 'heal_leaf', 'focus_soup', 'speed_oil', 'shield_potion'],
   dailyLogin:   ['normal_food', 'hot_milk', 'heal_leaf'],
-  battleWin:    ['courage_badge', 'speed_oil', 'wisdom_crystal', 'flame_core', 'bond_drop', 'continuity_proof'],
-  weeklyBoss:   ['focus_charm', 'raid_whistle', 'moonlight_wing', 'leader_crest', 'boss_medal', 'small_cape', 'study_glasses'],
+  battleWin:    ['courage_badge', 'speed_oil', 'wisdom_crystal', 'flame_core', 'bond_drop', 'continuity_proof', 'lucky_charm'],
+  weeklyBoss:   ['focus_charm', 'raid_whistle', 'moonlight_wing', 'leader_crest', 'boss_medal', 'small_cape', 'study_glasses', 'dragon_breath', 'hero_cape'],
   streak7:      ['weekly_trophy', 'star_chocolate', 'reward_cake'],
   levelUp:      ['energy_fruit', 'idea_candy', 'wisdom_crystal'],
 }

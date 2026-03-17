@@ -31,35 +31,79 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatHistory, isTyping])
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = input.trim()
-    if (!text) return
+    if (!text || isTyping) return
     setInput('')
     playSound('tap', soundEnabled)
-    const response = sendUserMessage(text)
+    const fallbackResponse = sendUserMessage(text)
     setIsTyping(true)
-    // Typing delay scales with response length: 900ms–2800ms
-    const delay = Math.min(2800, Math.max(900, response.length * 28))
-    setTimeout(() => {
-      addCharacterMessage(response)
-      setIsTyping(false)
-    }, delay)
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          charName: character.name,
+          userName,
+          mood: getCharacterMood(character.hp),
+          bondStage,
+          species: character.characterSpecies ?? 'lumie',
+          hunger: character.hunger,
+          hp: character.hp,
+          food: character.food,
+          history: chatHistory.slice(-8),
+        }),
+      })
+      const data = await res.json()
+      const responseText = data.text ?? fallbackResponse
+      const delay = Math.min(2200, Math.max(600, responseText.length * 20))
+      setTimeout(() => {
+        addCharacterMessage(responseText)
+        setIsTyping(false)
+      }, delay)
+    } catch {
+      const delay = Math.min(2200, Math.max(700, fallbackResponse.length * 25))
+      setTimeout(() => {
+        addCharacterMessage(fallbackResponse)
+        setIsTyping(false)
+      }, delay)
+    }
   }
 
-  const handleFeed = () => {
-    if (character.food <= 0) return
+  const handleFeed = async () => {
+    if (character.food <= 0 || isTyping) return
     feedCharacter()
     playSound('feed', soundEnabled)
     setFeedAnim(true)
     setEatAnim(true)
     setTimeout(() => setFeedAnim(false), 1800)
     setTimeout(() => setEatAnim(false), 2000)
-    const response = sendUserMessage('🍖 餌をあげる')
+    const fallback = sendUserMessage('🍖 餌をあげる')
     setIsTyping(true)
-    setTimeout(() => {
-      addCharacterMessage(response)
-      setIsTyping(false)
-    }, 1200)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          message: '🍖 ごはんをあげるよ！',
+          charName: character.name,
+          userName,
+          mood: getCharacterMood(character.hp),
+          bondStage,
+          species: character.characterSpecies ?? 'lumie',
+          hunger: character.hunger,
+          hp: character.hp,
+          food: character.food,
+          history: chatHistory.slice(-4),
+        }),
+      })
+      const data = await res.json()
+      setTimeout(() => { addCharacterMessage(data.text ?? fallback); setIsTyping(false) }, 1000)
+    } catch {
+      setTimeout(() => { addCharacterMessage(fallback); setIsTyping(false) }, 1200)
+    }
   }
 
   const displayAnim = eatAnim ? 'eat' : null
@@ -97,20 +141,6 @@ export default function ChatPage() {
             Lv {character.level} · {bondStage === 'loving' ? '大好き❤️' : bondStage === 'friendly' ? '仲良し' : bondStage === 'curious' ? '興味津々' : bondStage === 'neutral' ? '慣れてきた' : bondStage === 'wary' ? '警戒中' : '怯えてる'}
           </p>
         </div>
-        {/* 餌ボタン */}
-        <motion.button
-          whileTap={{ scale: 0.88 }}
-          onClick={handleFeed}
-          disabled={character.food <= 0}
-          className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
-            character.food > 0
-              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-              : 'bg-gray-700/20 text-gray-600 border border-gray-700/30'
-          }`}
-        >
-          <span className="text-lg">🍖</span>
-          <span>{character.food}</span>
-        </motion.button>
       </div>
 
       {/* メッセージリスト */}
@@ -202,31 +232,33 @@ export default function ChatPage() {
       <div className="px-4 py-3 bg-[#1a1a2e] border-t border-white/5 shrink-0 pb-safe">
         {/* クイック返信 */}
         <div className="flex gap-2 mb-2 overflow-x-auto pb-1 scrollbar-hide">
-          {['おはよう！', '元気？', 'ありがとう', '頑張ってる', 'かわいいね', '🍖 餌あげる'].map((quick) => (
+          {['おはよう！', '元気？', 'ありがとう', '頑張ってる', 'かわいいね'].map((quick) => (
             <button
               key={quick}
-              onClick={() => {
-                if (quick === '🍖 餌あげる') {
-                  handleFeed()
-                } else {
-                  setInput(quick)
-                  inputRef.current?.focus()
-                }
-              }}
-              className={`shrink-0 rounded-full px-3 py-1 text-xs border transition-colors ${
-                quick === '🍖 餌あげる'
-                  ? character.food > 0
-                    ? 'bg-orange-500/20 text-orange-400 border-orange-500/30 hover:bg-orange-500/30'
-                    : 'bg-white/3 text-gray-600 border-white/5 cursor-not-allowed'
-                  : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'
-              }`}
+              onClick={() => { setInput(quick); inputRef.current?.focus() }}
+              className="shrink-0 rounded-full px-3 py-1 text-xs border bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 transition-colors"
             >
-              {quick}{quick === '🍖 餌あげる' ? ` (${character.food})` : ''}
+              {quick}
             </button>
           ))}
         </div>
 
         <div className="flex gap-2">
+          {/* 餌ボタン */}
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            onClick={handleFeed}
+            disabled={character.food <= 0}
+            className={`flex flex-col items-center gap-0 px-2.5 py-1.5 rounded-2xl text-xs font-medium transition-all shrink-0 ${
+              character.food > 0
+                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                : 'bg-gray-700/20 text-gray-600 border border-gray-700/30'
+            }`}
+          >
+            <span className="text-xl">🍖</span>
+            <span className="text-xs leading-none">{character.food}</span>
+          </motion.button>
+
           <input
             ref={inputRef}
             type="text"

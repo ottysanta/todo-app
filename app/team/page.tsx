@@ -1,23 +1,38 @@
 'use client'
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { dummyTeam } from '@/lib/dummyData'
 import { getCharacterMood } from '@/lib/gameEngine'
 import CharacterDisplay from '@/components/CharacterDisplay'
 import { useGameStore } from '@/lib/store'
 
 export default function TeamPage() {
-  const { character, inviteCode, userName } = useGameStore()
+  const { character, inviteCode, userName, tapCharacter } = useGameStore()
   const myMood = getCharacterMood(character.hp)
   const [cheered, setCheered] = useState<Set<string>>(new Set())
   const [isSignedIn, setIsSignedIn] = useState(false)
   const [joinCode, setJoinCode] = useState('')
   const [copied, setCopied] = useState(false)
   const [joined, setJoined] = useState(false)
+  const [cheerNotification, setCheerNotification] = useState<string | null>(null)
+
+  // Simulate receiving a cheer after 4 seconds (for demo)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const sender = dummyTeam[Math.floor(Math.random() * dummyTeam.length)]
+      setCheerNotification(`${sender.name}さんから応援されました！ 💖`)
+      // Boost mood when cheered
+      tapCharacter()
+      setTimeout(() => setCheerNotification(null), 4000)
+    }, 4000)
+    return () => clearTimeout(timer)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCheer = (id: string) => {
     if (cheered.has(id)) return
     setCheered((prev) => new Set([...prev, id]))
+    // Cheering someone boosts our own mood slightly
+    tapCharacter()
   }
 
   const handleCopyCode = () => {
@@ -34,6 +49,21 @@ export default function TeamPage() {
   return (
     <div className="px-4 py-6 space-y-4">
       <h1 className="text-white font-bold text-xl">チーム</h1>
+
+      {/* 応援通知 */}
+      <AnimatePresence>
+        {cheerNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            className="fixed top-16 left-4 right-4 z-50 bg-gradient-to-r from-pink-900/90 to-purple-900/90 border border-pink-500/50 rounded-2xl p-4 flex items-center gap-3 shadow-2xl"
+          >
+            <span className="text-2xl">💖</span>
+            <p className="text-white font-medium text-sm">{cheerNotification}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* チーム連携 */}
       <div className="bg-[#1a1a2e] rounded-2xl p-4 border border-white/5">

@@ -1,4 +1,4 @@
-export type SoundType = 'tap' | 'complete' | 'levelup' | 'feed' | 'evolve'
+export type SoundType = 'tap' | 'complete' | 'levelup' | 'feed' | 'evolve' | 'battle_hit' | 'battle_crit' | 'battle_win' | 'battle_lose'
 
 let _ctx: AudioContext | null = null
 
@@ -42,6 +42,17 @@ export function playSound(type: SoundType, enabled: boolean) {
       setTimeout(() => tone(550, 0.1), 60)
     } else if (type === 'evolve') {
       ;[440, 554, 659, 880, 1100].forEach((f, i) => setTimeout(() => tone(f, 0.2, 'sine', 0.14), i * 120))
+    } else if (type === 'battle_hit') {
+      tone(200, 0.06, 'square', 0.06)
+      setTimeout(() => tone(150, 0.08, 'square', 0.04), 40)
+    } else if (type === 'battle_crit') {
+      tone(300, 0.05, 'sawtooth', 0.08)
+      setTimeout(() => tone(450, 0.08, 'sawtooth', 0.1), 50)
+      setTimeout(() => tone(600, 0.12, 'sine', 0.1), 120)
+    } else if (type === 'battle_win') {
+      ;[523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => tone(f, 0.18, 'sine', 0.12), i * 90))
+    } else if (type === 'battle_lose') {
+      ;[400, 350, 300, 250].forEach((f, i) => setTimeout(() => tone(f, 0.2, 'sine', 0.08), i * 120))
     }
   } catch (_) {}
 }

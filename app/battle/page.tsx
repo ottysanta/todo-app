@@ -1,10 +1,12 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
 import { useGameStore } from '@/lib/store'
 import { buildDailyBattleSetup, simulateBattle } from '@/lib/battleEngine'
 import CharacterDisplay from '@/components/CharacterDisplay'
 import { getCharacterMood, getBondStage } from '@/lib/gameEngine'
+import { playSound } from '@/lib/sound'
 import type { BattleEnemy, BattleResult, BattleStats } from '@/lib/types'
 import { ITEMS } from '@/lib/itemData'
 
@@ -34,7 +36,7 @@ function StatBadge({ label, value }: { label: string; value: string | number }) 
 }
 
 export default function BattlePage() {
-  const { character, tasks, userName, applyBattleResult, lastBattleResult, lastBattleDate } = useGameStore()
+  const { character, tasks, userName, applyBattleResult, lastBattleResult, lastBattleDate, soundEnabled } = useGameStore()
   const [phase, setPhase] = useState<Phase>('ready')
   const [currentRound, setCurrentRound] = useState(0)
   const [playerHp, setPlayerHp] = useState(0)
@@ -79,6 +81,7 @@ export default function BattlePage() {
       rounds,
       xpGained: won ? setup.enemy.xpReward : Math.floor(setup.enemy.xpReward * 0.2),
       foodGained: won ? setup.enemy.foodReward : 0,
+      coinsGained: won ? setup.enemy.coinReward : 0,
       playerStats: setup.playerStats,
       totalRounds: rounds.length,
       isWeeklyBoss: setup.isWeeklyBoss,
@@ -95,12 +98,16 @@ export default function BattlePage() {
         // Player attacks enemy
         setDmgEnemy({ val: round.playerDmg, crit: round.playerCrit, skill: round.playerSkill })
         setEnemyShake(true)
+        if (round.playerCrit) playSound('battle_crit', soundEnabled)
+        else playSound('battle_hit', soundEnabled)
         setTimeout(() => {
           setEnemyShake(false)
           setDmgEnemy(null)
           // Enemy attacks player
           setDmgPlayer({ val: round.enemyDmg, crit: round.enemyCrit })
           setPlayerShake(true)
+          if (round.enemyCrit) playSound('battle_crit', soundEnabled)
+          else playSound('battle_hit', soundEnabled)
           setTimeout(() => {
             setPlayerShake(false)
             setDmgPlayer(null)
@@ -120,6 +127,8 @@ export default function BattlePage() {
     // Show result
     setTimeout(() => {
       setPhase('result')
+      if (won) playSound('battle_win', soundEnabled)
+      else playSound('battle_lose', soundEnabled)
     }, rounds.length * 950 + 600)
   }
 
@@ -146,8 +155,11 @@ export default function BattlePage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-white font-bold text-xl">⚔️ バトル</h1>
-        <div className="text-xs text-gray-500">
-          今日完了: <span className="text-purple-400 font-bold">{completedToday}</span> タスク
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">今日完了: <span className="text-purple-400 font-bold">{completedToday}</span></span>
+          <Link href="/bestiary" className="text-xs text-gray-400 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5">
+            📖 図鑑
+          </Link>
         </div>
       </div>
 
@@ -434,17 +446,21 @@ export default function BattlePage() {
           {/* Rewards */}
           <div className="bg-[#1a1a2e] rounded-2xl p-4 border border-white/5">
             <p className="text-xs text-gray-500 font-medium mb-3">獲得報酬</p>
-            <div className="flex gap-3">
-              <div className="flex-1 bg-purple-900/20 border border-purple-500/20 rounded-xl p-3 text-center">
-                <p className="text-xl font-black text-purple-400">+{result.xpGained}</p>
+            <div className="grid grid-cols-4 gap-2">
+              <div className="bg-purple-900/20 border border-purple-500/20 rounded-xl p-2.5 text-center">
+                <p className="text-lg font-black text-purple-400">+{result.xpGained}</p>
                 <p className="text-xs text-gray-500 mt-0.5">XP</p>
               </div>
-              <div className="flex-1 bg-orange-900/20 border border-orange-500/20 rounded-xl p-3 text-center">
-                <p className="text-xl font-black text-orange-400">+{result.foodGained}</p>
+              <div className="bg-orange-900/20 border border-orange-500/20 rounded-xl p-2.5 text-center">
+                <p className="text-lg font-black text-orange-400">+{result.foodGained}</p>
                 <p className="text-xs text-gray-500 mt-0.5">🍖 餌</p>
               </div>
-              <div className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-center">
-                <p className="text-xl font-black text-gray-300">{result.totalRounds}</p>
+              <div className="bg-yellow-900/20 border border-yellow-500/20 rounded-xl p-2.5 text-center">
+                <p className="text-lg font-black text-yellow-400">+{result.coinsGained}</p>
+                <p className="text-xs text-gray-500 mt-0.5">🪙 コイン</p>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 text-center">
+                <p className="text-lg font-black text-gray-300">{result.totalRounds}</p>
                 <p className="text-xs text-gray-500 mt-0.5">ラウンド</p>
               </div>
             </div>

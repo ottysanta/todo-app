@@ -1,8 +1,10 @@
 'use client'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
 import { useGameStore } from '@/lib/store'
 import { ITEMS, RARITY_COLORS, RARITY_TEXT, RARITY_LABELS } from '@/lib/itemData'
+import { calculatePlayerStats } from '@/lib/battleEngine'
 import type { GameItem, ItemCategory } from '@/lib/types'
 
 const CATEGORY_LABELS: Record<ItemCategory, { label: string; emoji: string }> = {
@@ -21,10 +23,17 @@ const SLOT_LABELS = {
 }
 
 export default function InventoryPage() {
-  const { inventory, equippedItems, character, useItem, equipItem, unequipItem } = useGameStore()
+  const { inventory, equippedItems, character, tasks = [], useItem, equipItem, unequipItem } = useGameStore()
   const [selectedItem, setSelectedItem] = useState<GameItem | null>(null)
   const [filter, setFilter] = useState<ItemCategory | 'all'>('all')
   const [useResult, setUseResult] = useState<string | null>(null)
+
+  const bs = calculatePlayerStats(character, tasks ?? [])
+  const eqItems = Object.values(equippedItems).filter(Boolean).map(id => ITEMS[id!]).filter(Boolean)
+  const atkBonus = eqItems.reduce((s, it) => s + (it.effect.attackBonus ?? 0), 0)
+  const defBonus = eqItems.reduce((s, it) => s + (it.effect.defenseBonus ?? 0), 0)
+  const critBonus = eqItems.reduce((s, it) => s + (it.effect.critBonus ?? 0), 0)
+  const xpMult = eqItems.reduce((s, it) => s * (it.effect.xpMultiplier ?? 1), 1)
 
   const filteredInventory = inventory.filter((slot) => {
     const item = ITEMS[slot.itemId]
@@ -60,8 +69,39 @@ export default function InventoryPage() {
           <h1 className="text-white font-bold text-xl">🎒 持ち物</h1>
           <p className="text-gray-500 text-sm mt-0.5">アイテムを使って{character.name}をサポートしよう</p>
         </div>
-        <div className="text-xs text-gray-500 bg-white/5 rounded-xl px-3 py-2">
-          {inventory.reduce((sum, i) => sum + i.quantity, 0)} 個
+        <div className="flex items-center gap-2">
+          <Link href="/shop" className="text-xs text-yellow-400 bg-yellow-900/20 border border-yellow-500/30 rounded-xl px-3 py-2 font-medium">
+            🪙{character.coins ?? 0} ショップ
+          </Link>
+          <div className="text-xs text-gray-500 bg-white/5 rounded-xl px-3 py-2">
+            {inventory.reduce((sum, i) => sum + i.quantity, 0)} 個
+          </div>
+        </div>
+      </div>
+
+      {/* バトルステータス */}
+      <div className="bg-[#1a1a2e] rounded-2xl p-4 border border-cyan-500/20">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-semibold text-white">⚔️ バトルステータス</p>
+          {eqItems.length > 0 && (
+            <span className="text-xs text-cyan-400 bg-cyan-900/20 px-2 py-0.5 rounded-full">装備ボーナス込み</span>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: 'HP',      value: bs.hp,                              color: 'text-green-400' },
+            { label: '攻撃力',  value: bs.attack + atkBonus,              color: 'text-red-400',    bonus: atkBonus },
+            { label: '防御力',  value: bs.defense + defBonus,             color: 'text-blue-400',   bonus: defBonus },
+            { label: '速さ',    value: bs.speed,                           color: 'text-yellow-400' },
+            { label: 'クリット', value: `${Math.round((bs.critRate + critBonus) * 100)}%`, color: 'text-orange-400', bonus: 0 },
+            { label: 'XP倍率',  value: `×${xpMult.toFixed(1)}`,          color: 'text-purple-400' },
+          ].map(({ label, value, color, bonus }) => (
+            <div key={label} className="bg-white/5 rounded-xl p-2 text-center">
+              <p className={`text-sm font-bold ${color}`}>{value}</p>
+              {bonus != null && bonus > 0 && <p className="text-xs text-cyan-400">+{bonus}</p>}
+              <p className="text-gray-600 text-xs mt-0.5">{label}</p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -159,17 +199,17 @@ export default function InventoryPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-4 pb-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
             onClick={() => setSelectedItem(null)}
           >
             <motion.div
-              initial={{ y: 60, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 60, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              initial={{ scale: 0.88, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.88, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 28 }}
               onClick={(e) => e.stopPropagation()}
-              className={`w-full max-w-[430px] rounded-3xl border bg-[#1a1a2e] flex flex-col ${RARITY_COLORS[selectedItem.rarity]}`}
-              style={{ maxHeight: '80vh' }}
+              className={`w-full max-w-[400px] rounded-3xl border bg-[#1a1a2e] flex flex-col ${RARITY_COLORS[selectedItem.rarity]}`}
+              style={{ maxHeight: '82vh' }}
             >
               {/* Scrollable content */}
               <div className="overflow-y-auto flex-1 p-5 space-y-4">

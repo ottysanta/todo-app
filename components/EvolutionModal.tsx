@@ -3,7 +3,16 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useGameStore } from '@/lib/store'
 import { getAvailableEvolutions, EVOLUTION_OPTIONS } from '@/lib/evolutionEngine'
+import CharacterDisplay from '@/components/CharacterDisplay'
 import type { EvolutionType } from '@/lib/types'
+
+const EVOLUTION_SPECIES_PREVIEW: Record<string, { species: string; name: string }> = {
+  scholar: { species: 'alien', name: 'エイリアン型' },
+  warrior: { species: 'dragon', name: 'ドラゴン型' },
+  steady:  { species: 'bear', name: 'ベア型' },
+  leader:  { species: 'penguin', name: 'ペンギン型' },
+  harmony: { species: 'lumie', name: 'ルミエ進化型' },
+}
 
 export default function EvolutionModal() {
   const { character, pendingEvolution, confirmEvolution, dismissEvolution } = useGameStore()
@@ -95,19 +104,25 @@ export default function EvolutionModal() {
                     key={opt.type}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setSelected(selected === opt.type ? null : opt.type)}
-                    className={`w-full rounded-2xl border p-4 text-left transition-all ${
+                    className={`w-full rounded-2xl border p-3 text-left transition-all ${
                       selected === opt.type
                         ? 'border-purple-500 bg-purple-900/30'
                         : 'border-white/10 bg-white/3 hover:border-white/20'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${opt.color} flex items-center justify-center text-2xl shrink-0`}>
-                        {opt.emoji}
+                      <div className="shrink-0">
+                        <CharacterDisplay
+                          mood="happy"
+                          bondStage="friendly"
+                          size="sm"
+                          species={EVOLUTION_SPECIES_PREVIEW[opt.type]?.species as never ?? 'lumie'}
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-white font-bold">{opt.label}</p>
+                          <p className="text-white font-bold text-sm">{opt.label}</p>
+                          <span className="text-xs text-purple-300">{EVOLUTION_SPECIES_PREVIEW[opt.type]?.name}</span>
                           {selected === opt.type && (
                             <span className="text-xs bg-purple-600 text-white rounded-full px-2 py-0.5">選択中</span>
                           )}
