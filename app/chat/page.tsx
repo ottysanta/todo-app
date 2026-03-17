@@ -72,38 +72,16 @@ export default function ChatPage() {
     }
   }
 
-  const handleFeed = async () => {
-    if (character.food <= 0 || isTyping) return
+  const handleFeed = () => {
+    if (character.food <= 0) return
     feedCharacter()
     playSound('feed', soundEnabled)
     setFeedAnim(true)
     setEatAnim(true)
     setTimeout(() => setFeedAnim(false), 1800)
     setTimeout(() => setEatAnim(false), 2000)
-    const fallback = sendUserMessage('🍖 餌をあげる')
-    setIsTyping(true)
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          message: '🍖 ごはんをあげるよ！',
-          charName: character.name,
-          userName,
-          mood: getCharacterMood(character.hp),
-          bondStage,
-          species: character.characterSpecies ?? 'lumie',
-          hunger: character.hunger,
-          hp: character.hp,
-          food: character.food,
-          history: chatHistory.slice(-4),
-        }),
-      })
-      const data = await res.json()
-      setTimeout(() => { addCharacterMessage(data.text ?? fallback); setIsTyping(false) }, 1000)
-    } catch {
-      setTimeout(() => { addCharacterMessage(fallback); setIsTyping(false) }, 1200)
-    }
+    const response = sendUserMessage('🍖 餌をあげる')
+    addCharacterMessage(response)
   }
 
   const displayAnim = eatAnim ? 'eat' : null

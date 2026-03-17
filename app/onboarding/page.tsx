@@ -4,13 +4,26 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useGameStore } from '@/lib/store'
 import CharacterDisplay from '@/components/CharacterDisplay'
-import type { TaskStatus } from '@/lib/types'
+import type { TaskStatus, CharacterSpecies } from '@/lib/types'
 import { getProgressLabel, getProgressColor, getProgressWidth } from '@/lib/gameEngine'
 
-const STEPS = 6
+const STEPS = 7
+
+const SPECIES_OPTIONS: { value: CharacterSpecies; label: string; emoji: string }[] = [
+  { value: 'lumie',   label: 'ルミエ',    emoji: '💜' },
+  { value: 'dino',    label: 'ディノ',    emoji: '💚' },
+  { value: 'bunny',   label: 'バニー',    emoji: '🩷' },
+  { value: 'ghost',   label: 'ゴースト',  emoji: '🤍' },
+  { value: 'dragon',  label: 'ドラゴン',  emoji: '🧡' },
+  { value: 'frog',    label: 'フロッグ',  emoji: '💛' },
+  { value: 'bear',    label: 'ベア',      emoji: '🤎' },
+  { value: 'cat',     label: 'ニャコ',    emoji: '🧡' },
+  { value: 'alien',   label: 'エイリアン', emoji: '🩵' },
+  { value: 'penguin', label: 'ペンギン',  emoji: '💙' },
+]
 
 const guideCards = [
-  { icon: '✅', title: 'タスクをこなす', desc: '「進める」ボタンで6段階の進捗を更新。完了すると餌🍖と経験値がもらえるよ。間違えたら「◀」で戻せるよ！' },
+  { icon: '✅', title: 'タスクをこなす', desc: '「進める」ボタンで進捗を更新。完了すると餌🍖と経験値がもらえるよ。間違えたら「◀」で戻せるよ！' },
   { icon: '🥚', title: 'キャラクターを育てる', desc: 'タスクを進めると餌をあげられる。餌をあげると元気になって成長していくよ。' },
   { icon: '👥', title: 'チームと一緒に', desc: '招待コードを送ることでチームメンバーと連携！お互い刺激し合えるよ。' },
 ]
@@ -21,6 +34,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0)
   const [userName, setUserName] = useState('')
   const [charName, setCharName] = useState('')
+  const [selectedSpecies, setSelectedSpecies] = useState<CharacterSpecies>('lumie')
   const [tutorialStatus, setTutorialStatus] = useState<TaskStatus>(0)
   const [showTutorialComplete, setShowTutorialComplete] = useState(false)
 
@@ -40,7 +54,7 @@ export default function OnboardingPage() {
   const handleFinish = () => {
     const finalUserName = userName.trim() || 'あなた'
     const finalCharName = charName.trim() || 'Lumie'
-    completeOnboarding(finalUserName, finalCharName, 'lumie')
+    completeOnboarding(finalUserName, finalCharName, selectedSpecies)
     router.push('/')
   }
 
@@ -127,7 +141,7 @@ export default function OnboardingPage() {
             exit={{ opacity: 0, x: -40 }}
             className="flex flex-col items-center text-center gap-6 flex-1 justify-center py-8 w-full"
           >
-            <CharacterDisplay mood="happy" bondStage="curious" size="lg" species="lumie" />
+            <CharacterDisplay mood="happy" bondStage="curious" size="lg" species={selectedSpecies} />
             <div className="space-y-2">
               <p className="text-gray-400 text-sm italic">
                 {userName.trim() || 'あなた'}さん…！<br />ぼくにも名前をつけてほしいな
@@ -146,8 +160,56 @@ export default function OnboardingPage() {
           </motion.div>
         )}
 
-        {/* Step 3: 使い方ガイド */}
+        {/* Step 3: 種族選択 */}
         {step === 3 && (
+          <motion.div
+            key="step3"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -40 }}
+            className="flex flex-col items-center gap-5 flex-1 justify-center py-4 w-full"
+          >
+            <div className="text-center">
+              <h2 className="text-white text-xl font-bold">どの子にする？</h2>
+              <p className="text-gray-400 text-sm mt-1">タスクを重ねると進化して見た目が変わるよ！</p>
+            </div>
+
+            {/* Preview of selected */}
+            <motion.div
+              key={selectedSpecies}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            >
+              <CharacterDisplay mood="happy" bondStage="curious" size="lg" species={selectedSpecies} />
+            </motion.div>
+            <p className="text-purple-300 text-sm font-medium">
+              {SPECIES_OPTIONS.find(s => s.value === selectedSpecies)?.label}
+            </p>
+
+            {/* Species grid */}
+            <div className="grid grid-cols-5 gap-2 w-full">
+              {SPECIES_OPTIONS.map((sp) => (
+                <motion.button
+                  key={sp.value}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setSelectedSpecies(sp.value)}
+                  className={`flex flex-col items-center gap-1 p-2 rounded-2xl border transition-all ${
+                    selectedSpecies === sp.value
+                      ? 'border-purple-500 bg-purple-900/30'
+                      : 'border-white/10 bg-white/3'
+                  }`}
+                >
+                  <CharacterDisplay mood="normal" size="sm" species={sp.value} />
+                  <span className="text-xs text-gray-400 leading-none">{sp.label}</span>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Step 4: 使い方ガイド */}
+        {step === 4 && (
           <motion.div
             key="step4"
             initial={{ opacity: 0, x: 40 }}
@@ -182,8 +244,8 @@ export default function OnboardingPage() {
           </motion.div>
         )}
 
-        {/* Step 4: インタラクティブチュートリアル */}
-        {step === 4 && (
+        {/* Step 5: インタラクティブチュートリアル */}
+        {step === 5 && (
           <motion.div
             key="step5"
             initial={{ opacity: 0, x: 40 }}
@@ -201,7 +263,7 @@ export default function OnboardingPage() {
                 mood={tutorialStatus >= 5 ? 'happy' : tutorialStatus >= 3 ? 'normal' : 'tired'}
                 bondStage="curious"
                 size="lg"
-                species="lumie"
+                species={selectedSpecies}
               />
             </motion.div>
 
@@ -267,8 +329,8 @@ export default function OnboardingPage() {
           </motion.div>
         )}
 
-        {/* Step 5: 完了 */}
-        {step === 5 && (
+        {/* Step 6: 完了 */}
+        {step === 6 && (
           <motion.div
             key="step6"
             initial={{ opacity: 0, x: 40 }}
@@ -281,7 +343,7 @@ export default function OnboardingPage() {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
             >
-              <CharacterDisplay mood="happy" bondStage="curious" size="lg" species="lumie" />
+              <CharacterDisplay mood="happy" bondStage="curious" size="lg" species={selectedSpecies} />
             </motion.div>
             <div className="space-y-3">
               <p className="text-gray-400 text-sm italic">
@@ -309,7 +371,6 @@ export default function OnboardingPage() {
             className="w-full bg-gradient-to-r from-purple-600 to-cyan-500 text-white rounded-2xl py-4 font-bold text-base"
           >
             {step === 0 ? 'はじめる' :
-             step === 3 ? 'わかった！' :
              step === 4 ? 'わかった！' :
              step === 5 ? (tutorialStatus >= 5 ? 'つぎへ' : 'スキップ') :
              'つぎへ'}

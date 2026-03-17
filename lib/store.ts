@@ -895,7 +895,10 @@ export const useGameStore = create<GameStore>()(
             ...(pc ?? {}),
             bondLevel: pc?.bondLevel ?? 5,
             tapCountToday: pc?.tapCountToday ?? 0,
-            characterSpecies: pc?.characterSpecies ?? 'lumie',
+            // If evolutionType is set, always apply the corresponding species
+            characterSpecies: ((pc?.evolutionType ? EVOLUTION_SPECIES[pc.evolutionType] : null)
+              ?? pc?.characterSpecies
+              ?? 'lumie') as import('./types').CharacterSpecies,
             streak: pc?.streak ?? 0,
             coins: pc?.coins ?? 0,
             defeatedEnemies: pc?.defeatedEnemies ?? {},
