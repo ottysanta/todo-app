@@ -124,7 +124,7 @@ export default function OnboardingPage() {
               type="text"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
-              placeholder="例：雄亮"
+              placeholder="例：さとし"
               maxLength={20}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white text-center text-lg placeholder-gray-600 outline-none focus:border-purple-500 transition-colors"
             />
